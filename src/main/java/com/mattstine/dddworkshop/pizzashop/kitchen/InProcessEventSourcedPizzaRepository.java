@@ -11,13 +11,25 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 final class InProcessEventSourcedPizzaRepository extends InProcessEventSourcedRepository<PizzaRef, Pizza, Pizza.PizzaState, PizzaEvent, PizzaAddedEvent> implements PizzaRepository {
+    Map<KitchenOrderRef, Set<PizzaRef>> kitchenOrderRefSetMap;
 
     InProcessEventSourcedPizzaRepository(EventLog eventLog, Topic pizzas) {
         super(eventLog, PizzaRef.class, Pizza.class, Pizza.PizzaState.class, PizzaAddedEvent.class, pizzas);
+
+        kitchenOrderRefSetMap = new HashMap<>();
+
+        eventLog.subscribe(new Topic("pizzas"), e -> {
+            PizzaAddedEvent pizzaAddedEvent = (PizzaAddedEvent) e;
+            Set<PizzaRef> pizzaRefs = kitchenOrderRefSetMap.computeIfAbsent(pizzaAddedEvent.getState().getKitchenOrderRef(), k -> new HashSet<>());
+            pizzaRefs.add(pizzaAddedEvent.getRef());
+        });
     }
 
     @Override
     public Set<Pizza> findPizzasByKitchenOrderRef(KitchenOrderRef kitchenOrderRef) {
-        return null;
+        return kitchenOrderRefSetMap.get(kitchenOrderRef)
+                .stream()
+                .map(this::findByRef)
+                .collect(Collectors.toSet());
     }
 }
