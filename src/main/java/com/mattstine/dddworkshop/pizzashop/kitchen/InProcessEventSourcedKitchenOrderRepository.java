@@ -23,8 +23,10 @@ final class InProcessEventSourcedKitchenOrderRepository extends InProcessEventSo
         onlineOrderRefKitchenOrderRefMap = new HashMap<>();
 
         eventLog.subscribe(new Topic("kitchen_orders"), e -> {
-            KitchenOrderAddedEvent koae = (KitchenOrderAddedEvent) e;
-            onlineOrderRefKitchenOrderRefMap.put(koae.getState().getOnlineOrderRef(), koae.getRef());
+            if (e instanceof KitchenOrderAddedEvent) {
+                KitchenOrderAddedEvent koae = (KitchenOrderAddedEvent) e;
+                onlineOrderRefKitchenOrderRefMap.put(koae.getState().getOnlineOrderRef(), koae.getRef());
+            }
         });
     }
 
